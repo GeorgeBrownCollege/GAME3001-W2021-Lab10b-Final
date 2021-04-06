@@ -150,6 +150,8 @@ bool CollisionManager::lineRectCheck(const glm::vec2 line_start, const glm::vec2
 
 bool CollisionManager::lineRectEdgeCheck(const glm::vec2 line_start, const glm::vec2 rect_start, const float rect_width, const float rect_height)
 {
+	bool state = false;
+	
 	const auto x1 = line_start.x;
 	const auto y1 = line_start.y;
 
@@ -185,11 +187,13 @@ bool CollisionManager::lineRectEdgeCheck(const glm::vec2 line_start, const glm::
 	const auto bottom = lineLineCheck(glm::vec2(x1, y1), bottomEdgeMidPoint, bottomEdgeStart, bottomEdgeEnd);
 
 	// return true if any line collides with the edge
-	if (left || right || top || bottom) {
-		return true;
+	if (left || right || top || bottom) 
+	{
+		state = true;
 	}
 
-	return false;
+
+	return state;
 }
 
 int CollisionManager::minSquaredDistanceLineLine(glm::vec2 line1_start, glm::vec2 line1_end, glm::vec2 line2_start, glm::vec2 line2_end)
@@ -375,36 +379,45 @@ bool CollisionManager::LOSCheck(Agent* agent, glm::vec2 end_point, const std::ve
 		const auto width = object->getWidth();
 		const auto height = object->getHeight();
 
-		if (object->getType() != target->getType())
+		switch(object->getType())
 		{
-			// if LOS ray is colliding with object that is not the target
-			if (lineRectCheck(start_point, end_point, rect_start, width, height))
-			{
-				return false;
-			}
-		}
-		else
-		{
-			// if the agent is an AGENT type (requires direction)
-			if(agent->getType() == AGENT)
-			{
-				// if LOS ray is colliding with object that is not the target
+			case OBSTACLE:
 				if (lineRectCheck(start_point, end_point, rect_start, width, height))
 				{
-					return true;
+					return false;
 				}
-			}
-			else // not an AGENT type (does not require direction)
-			{
-				// if LOS ray is colliding with object that is not the target
-				if (lineRectEdgeCheck(start_point, rect_start, width, height))
+				break;
+			case TARGET:
 				{
-					return true;
+					switch (agent->getType())
+					{
+						case AGENT:
+							if (lineRectCheck(start_point, end_point, rect_start, width, height))
+							{
+								return true;
+							}
+							break;
+						case PATH_NODE:
+							if (lineRectEdgeCheck(start_point, rect_start, width, height))
+							{
+								return true;
+							}
+							break;
+						default:
+							//error
+							std::cout << "ERROR: " << agent->getType() << std::endl;
+							break;
+					}
 				}
-			}
+				break;
+			default:
+				//error
+				std::cout << "ERROR: " << object->getType() << std::endl;
+				break;
 		}
+		
 	}
-
+	
 	// if the line does not collide with an object that is the target then LOS is false
 	return false;
 }

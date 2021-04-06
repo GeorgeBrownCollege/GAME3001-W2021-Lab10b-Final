@@ -305,10 +305,26 @@ void PlayScene::m_CheckPathNodeLOS()
 
 void PlayScene::m_toggleGrid(bool state)
 {
-	
 
 	for (auto path_node : m_pGrid)
 	{
 		path_node->setVisible(state);
 	}
+}
+
+PathNode* PlayScene::m_findClosestPathNode(Agent* agent)
+{
+	auto min = INFINITY;
+	PathNode* closestPathNode = nullptr;
+	for (auto path_node : m_pGrid)
+	{
+		const auto distance = Util::distance(agent->getTransform()->position, path_node->getTransform()->position);
+		if(distance < min)
+		{
+			min = distance;
+			closestPathNode = path_node;
+		}
+	}
+
+	return closestPathNode;
 }

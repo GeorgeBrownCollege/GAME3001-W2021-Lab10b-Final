@@ -58,6 +58,9 @@ private:
 	void m_CheckPathNodeLOS();
 	bool m_gridVisible;
 	void m_toggleGrid(bool state);
+
+	// lab 10
+	PathNode* m_findClosestPathNode(Agent* agent);
 };
 
 
