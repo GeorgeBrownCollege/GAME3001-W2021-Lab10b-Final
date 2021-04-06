@@ -374,17 +374,34 @@ bool CollisionManager::LOSCheck(Agent* agent, glm::vec2 end_point, const std::ve
 		const auto rect_start = object->getTransform()->position - objectOffset;
 		const auto width = object->getWidth();
 		const auto height = object->getHeight();
-		
-		// check if Line collides with an object in the list
-		if(lineRectCheck(start_point, end_point, rect_start, width, height))
+
+		if (object->getType() != target->getType())
 		{
-			// if the collision is with the target object the LOS is true
-			if(object->getType() == target->getType())
+			// if LOS ray is colliding with object that is not the target
+			if (lineRectCheck(start_point, end_point, rect_start, width, height))
 			{
-				return true;
+				return false;
 			}
-			// if the line collides with an object in the list that is not the target then LOS is false
-			return false;
+		}
+		else
+		{
+			// if the agent is an AGENT type (requires direction)
+			if(agent->getType() == AGENT)
+			{
+				// if LOS ray is colliding with object that is not the target
+				if (lineRectCheck(start_point, end_point, rect_start, width, height))
+				{
+					return true;
+				}
+			}
+			else // not an AGENT type (does not require direction)
+			{
+				// if LOS ray is colliding with object that is not the target
+				if (lineRectEdgeCheck(start_point, rect_start, width, height))
+				{
+					return true;
+				}
+			}
 		}
 	}
 
