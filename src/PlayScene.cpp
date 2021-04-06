@@ -38,7 +38,7 @@ void PlayScene::update()
 {
 	updateDisplayList();
 
-	//m_CheckAgentLOS(m_pShip, m_pTarget);
+	m_CheckAgentLOS(m_pShip, m_pTarget);
 
 	m_CheckPathNodeLOS();
 }
@@ -94,8 +94,7 @@ void PlayScene::start()
 	// add the ship to the scene as a start point
 	m_pShip = new Ship();
 	m_pShip->getTransform()->position = glm::vec2(200.0f, 300.0f);
-	/*addChild(m_pShip, 2);
-	m_pShip->setEnabled(false);*/
+	addChild(m_pShip, 2);
 
 	// add the Obstacle to the scene as a start point
 	m_pObstacle1 = new Obstacle();
@@ -259,8 +258,12 @@ void PlayScene::m_buildGrid()
 	}
 }
 
-void PlayScene::m_CheckAgentLOS(Agent* agent, DisplayObject* object)
+bool PlayScene::m_CheckAgentLOS(Agent* agent, DisplayObject* object)
 {
+	// initialize
+	bool hasLOS = false;
+	agent->setHasLOS(false);
+	
 	// if agent to object distance is less than or equal to LOS Distance
 	auto AgentToObjectDistance = Util::distance(agent->getTransform()->position, object->getTransform()->position);
 	if (AgentToObjectDistance <= agent->getLOSDistance())
@@ -273,18 +276,20 @@ void PlayScene::m_CheckAgentLOS(Agent* agent, DisplayObject* object)
 
 			if (AgentToObstacleDistance <= AgentToObjectDistance)
 			{
-				if ((display_object->getType() != agent->getType()) && (display_object->getType() != object->getType()))
+				if ((display_object->getType() != AGENT) && (display_object->getType() != PATH_NODE) && (display_object->getType() != object->getType()))
 				{
 					contactList.push_back(display_object);
 				}
 			}
 		}
 		contactList.push_back(object); // add the target to the end of the list
-		auto hasLOS = CollisionManager::LOSCheck(agent->getTransform()->position,
-			agent->getTransform()->position + agent->getCurrentDirection() * agent->getLOSDistance(), contactList, object);
+		const auto agentTarget = agent->getTransform()->position + agent->getCurrentDirection() * agent->getLOSDistance();
+		hasLOS = CollisionManager::LOSCheck(agent, agentTarget, contactList, object);
 
 		agent->setHasLOS(hasLOS);
 	}
+
+	return hasLOS;
 }
 
 void PlayScene::m_CheckPathNodeLOS()

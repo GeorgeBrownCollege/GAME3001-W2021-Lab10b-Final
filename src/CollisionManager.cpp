@@ -121,14 +121,14 @@ bool CollisionManager::lineLineCheck(const glm::vec2 line1_start, const glm::vec
 	return false;
 }
 
-bool CollisionManager::lineRectCheck(const glm::vec2 line1_start, const glm::vec2 line1_end, const glm::vec2 rec_start, const float rect_width, const float rect_height)
+bool CollisionManager::lineRectCheck(const glm::vec2 line_start, const glm::vec2 line_end, const glm::vec2 rect_start, const float rect_width, const float rect_height)
 {
-	const auto x1 = line1_start.x;
-	const auto x2 = line1_end.x;
-	const auto y1 = line1_start.y;
-	const auto y2 = line1_end.y;
-	const auto rx = rec_start.x;
-	const auto ry = rec_start.y;
+	const auto x1 = line_start.x;
+	const auto x2 = line_end.x;
+	const auto y1 = line_start.y;
+	const auto y2 = line_end.y;
+	const auto rx = rect_start.x;
+	const auto ry = rect_start.y;
 	const auto rw = rect_width;
 	const auto rh = rect_height;
 
@@ -141,6 +141,50 @@ bool CollisionManager::lineRectCheck(const glm::vec2 line1_start, const glm::vec
 
 	// if ANY of the above are true, the line
 	// has hit the rectangle
+	if (left || right || top || bottom) {
+		return true;
+	}
+
+	return false;
+}
+
+bool CollisionManager::lineRectEdgeCheck(const glm::vec2 line_start, const glm::vec2 rect_start, const float rect_width, const float rect_height)
+{
+	const auto x1 = line_start.x;
+	const auto y1 = line_start.y;
+
+	const auto rx = rect_start.x;
+	const auto ry = rect_start.y;
+	const auto rw = rect_width;
+	const auto rh = rect_height;
+
+	// configure the left edge
+	const auto leftEdgeStart = glm::vec2(rx, ry);
+	const auto leftEdgeEnd = glm::vec2(rx, ry + rh);
+	const auto leftEdgeMidPoint = Util::lerp(leftEdgeStart, leftEdgeEnd, 0.5f);
+
+	// configure the right edge
+	const auto rightEdgeStart = glm::vec2(rx + rw, ry);
+	const auto rightEdgeEnd = glm::vec2(rx + rw, ry + rh);
+	const auto rightEdgeMidPoint = Util::lerp(rightEdgeStart, rightEdgeEnd, 0.5f);
+
+	// configure the top edge
+	const auto topEdgeStart = glm::vec2(rx, ry);
+	const auto topEdgeEnd = glm::vec2(rx + rw, ry);
+	const auto topEdgeMidPoint = Util::lerp(topEdgeStart, topEdgeEnd, 0.5f);
+
+	// configure the bottom edge
+	const auto bottomEdgeStart = glm::vec2(rx, ry + rh);
+	const auto bottomEdgeEnd = glm::vec2(rx + rw, ry + rh);
+	const auto bottomEdgeMidPoint = Util::lerp(bottomEdgeStart, bottomEdgeEnd, 0.5f);
+
+	// line / line comparisons
+	const auto left = lineLineCheck(glm::vec2(x1, y1), leftEdgeMidPoint, leftEdgeStart, leftEdgeEnd);
+	const auto right = lineLineCheck(glm::vec2(x1, y1), rightEdgeMidPoint, rightEdgeStart, rightEdgeEnd);
+	const auto top = lineLineCheck(glm::vec2(x1, y1), topEdgeMidPoint, topEdgeStart, topEdgeEnd);
+	const auto bottom = lineLineCheck(glm::vec2(x1, y1), bottomEdgeMidPoint, bottomEdgeStart, bottomEdgeEnd);
+
+	// return true if any line collides with the edge
 	if (left || right || top || bottom) {
 		return true;
 	}
@@ -320,14 +364,19 @@ bool CollisionManager::pointRectCheck(const glm::vec2 point, const glm::vec2 rec
 }
 
 // assumptions - the list of objects are stored so that they are facing the target and the target is loaded last
-bool CollisionManager::LOSCheck(glm::vec2 start_point, glm::vec2 end_point, const std::vector<DisplayObject*>& objects, DisplayObject* target)
+bool CollisionManager::LOSCheck(Agent* agent, glm::vec2 end_point, const std::vector<DisplayObject*>& objects, DisplayObject* target)
 {
+	const auto start_point = agent->getTransform()->position;
+	
 	for (auto object : objects)
 	{
 		auto objectOffset = glm::vec2(object->getWidth() * 0.5f, object->getHeight() * 0.5f);
+		const auto rect_start = object->getTransform()->position - objectOffset;
+		const auto width = object->getWidth();
+		const auto height = object->getHeight();
 		
 		// check if Line collides with an object in the list
-		if(lineRectCheck(start_point, end_point, object->getTransform()->position - objectOffset, object->getWidth(), object->getHeight()))
+		if(lineRectCheck(start_point, end_point, rect_start, width, height))
 		{
 			// if the collision is with the target object the LOS is true
 			if(object->getType() == target->getType())
